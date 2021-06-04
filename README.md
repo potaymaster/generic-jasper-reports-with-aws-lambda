@@ -27,7 +27,7 @@ All step scripts uses Docker. No additional software (java, maven or aws-cli) is
 4. Review *lambda_config.sh* file to ensure correct values for all properties, specially *region*, *files_s3_bucket* and *templates_s3_bucket*. The two last properties must be unique in AWS. Otherwise these cannot be created. See [Amazon S3 Bucket Naming Requirements](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-s3-bucket-naming-requirements.html).
 5. Set execute permissions to all *.sh* files.
 6. Execute *00.launch_all_steps.sh* or execute the steps you want.
-7. Whem all scripts ends, go to AWS Web Console to check CloudFormation creation stack status.
+7. When all scripts ends, go to AWS Web Console to check CloudFormation creation stack status.
 8. Wait until stack creation is complete and go to API Gateway to copy URL.
 9. Paste API URL into Postman call & launch test example.
 10. Enjoy !!
