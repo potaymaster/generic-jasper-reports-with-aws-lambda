@@ -1,0 +1,103 @@
+openapi: "3.0.1"
+info:
+  title: "JasperReports API"
+  version: "2021-05-10"
+servers:
+- url: "https://XXXXXX.execute-api.eu-west-1.amazonaws.com"
+
+paths:
+  '/jasper':
+    post:
+      tags:
+        - Reports
+      summary: Generate a PDF with Jasper Report
+      description: >-
+        Generate a PDF with Jasper Report.
+      operationId: getPdfReport
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        '404':
+          description: Not found
+          content: {}
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: "2.0"
+        type: "aws_proxy"
+        httpMethod: "POST"
+        uri: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:java_jasper/invocations"
+        connectionType: "INTERNET"
+
+components:
+  schemas:
+    error:
+      type: object
+      properties:
+        error:
+          required:
+            - code
+            - error_message
+          type: object
+          properties:
+            error_message:
+              type: string
+              description: >-
+                Message with error description.
+            code:
+              type: string
+              description: The application internal error code.
+          description: Payload standard.
+      description: >-
+        Error response object
+
+x-amazon-apigateway-cors:
+  allowMethods:
+  - "*"
+  allowHeaders:
+  - "authorization"
+  - "content-type"
+  - "x-amz-date"
+  - "x-amz-security-token"
+  - "x-api-key"
+  maxAge: 0
+  allowCredentials: false
+  allowOrigins:
+  - "*"
+x-amazon-apigateway-gateway-responses:
+  DEFAULT_4XX:
+    responseTemplates:
+      application/json:
+        message: DEFAULT_4XX
+  INVALID_API_KEY:
+    statusCode: 429
+    responseTemplates:
+      application/json:
+        message: INVALID_API_KEY
+  UNAUTHORIZED:
+    statusCode: 401
+    responseTemplates:
+      application/json:
+        message: UNAUTHORIZED
+x-amazon-apigateway-importexport-version: "1.0"

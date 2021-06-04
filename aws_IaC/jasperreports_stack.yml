@@ -1,0 +1,255 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Template that contains the necesary cloud resources to deploy the AWS Lambda JasperReports Service.
+
+Globals:
+  Api:
+    OpenApiVersion: '3.0.1'
+
+Parameters:
+  FilesS3Location:
+    Type: String
+    Default: lambda-files
+  TemplatesS3Location:
+    Type: String
+    Default: jasperreports-templates
+  LambdaPackagedFile:
+    Type: String
+    Default: jasperreports-1.0.0.jar
+  ProductName:
+    Type: String
+    Default: JasperReports
+
+Resources:
+  # EC2 resources
+  jasperReportsVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:  10.85.0.0/20
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: jasperreports-vpc
+        - Key: Product
+          Value: !Ref ProductName
+
+  jasperReportsInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: jasperreports-internet-gateway
+
+  jasperReportsInternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref jasperReportsInternetGateway
+      VpcId: !Ref jasperReportsVpc
+
+  jasperReportsPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref jasperReportsVpc
+      CidrBlock: 10.85.0.0/23
+      AvailabilityZone: eu-west-1a
+      Tags:
+        - Key: Name
+          Value: jasperreports-priv-subnet
+        - Key: Product
+          Value: !Ref ProductName
+
+  jasperreportsPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref jasperReportsVpc
+      CidrBlock: 10.85.4.0/23
+      AvailabilityZone: eu-west-1a
+      Tags:
+        - Key: Name
+          Value: jasperreports-public-subnet
+        - Key: Product
+          Value: !Ref ProductName
+
+  jasperreportsNatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: jasperReportsInternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  jasperreportsNatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt jasperreportsNatGatewayEIP.AllocationId
+      SubnetId: !Ref jasperreportsPublicSubnet
+
+  jasperreportsPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref jasperReportsVpc
+      Tags:
+        - Key: Name
+          Value: jasperreports public routes
+
+  jasperreportsDefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: jasperReportsInternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref jasperreportsPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref jasperReportsInternetGateway
+
+  jasperreportsPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref jasperreportsPublicRouteTable
+      SubnetId: !Ref jasperreportsPublicSubnet
+
+  jasperreportsPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref jasperReportsVpc
+      Tags:
+        - Key: Name
+          Value: jasperreports private routes (AZ1)
+
+  jasperreportsDefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref jasperreportsPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref jasperreportsNatGateway
+
+  jasperReportsPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref jasperreportsPrivateRouteTable
+      SubnetId: !Ref jasperReportsPrivateSubnet
+  # END EC2 resources
+
+  # BEGIN API Gateway
+  jasperreportsHttpApiAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: jasperreports-api-logs
+
+  jasperreportsHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      DefinitionBody:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: !Join [ '', [ 's3://', !Ref FilesS3Location, '/IaC/api_swagger.yml' ] ]
+      Tags:
+      AccessLogSettings:
+        DestinationArn: !GetAtt jasperreportsHttpApiAccessLogs.Arn
+        Format: >-
+          {"accountId":"$context.accountId", "apiId": "$context.apiId", "authorizerError":"$context.authorizer.error",
+          "authorizerPrincipalId":"$context.authorizer.principalId", "awsEndpointRequestId":"$context.awsEndpointRequestId",
+          "awsEndpointRequestId2":"$context.awsEndpointRequestId2", "dataProcessed":"$context.dataProcessed",
+          "domainName":"$context.domainName", "domainPrefix": "$context.domainPrefix", "errorMessage":"$context.error.message",
+          "errorResponseType":"$context.error.responseType", "extendedRequestId":"$context.extendedRequestId",
+          "httpMethod":"$context.httpMethod", "sourceIp":"$context.identity.sourceIp", "userAgent":"$context.identity.userAgent",
+          "integrationError": "$context.integration.error", "integrationStatus":"$context.integration.status",
+          "integrationLatency":"$context.integration.latency", "integrationRequestId":"$context.integration.requestId",
+          "integrationErrorMessage":"$context.integrationErrorMessage", "integrationStatus2":"$context.integrationStatus",
+          "path":"$context.path", "protocol": "$context.protocol", "requestId":"$context.requestId", "requestTime":"$context.requestTime",
+          "requestTimeEpoch":"$context.requestTimeEpoch", "responseLatency":"$context.responseLatency",
+          "responseLength":"$context.responseLength", "routeKey":"$context.routeKey", "stage":"$context.stage", "status":"$context.status"}
+      FailOnWarnings: True
+  # END API Gateway
+
+
+  # BEGIN Lambda functions
+  jasperreportsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: 'jasperreports-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "jasperreports-lambda-policy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:*
+                  - lambda:*
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - ssm:GetParametersByPath
+                  - ssm:GetParameters
+                  - ssm:GetParameter
+                  - ssm:DescribeParameters
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - tag:GetResources
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:PutObjectAcl
+                  - s3:GetBucketLocation
+                Resource: "*"
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: jasperreports-lambda-sg
+      GroupDescription: Security group for lambda
+      VpcId: !Ref jasperReportsVpc
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          FromPort: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: 'Product'
+          Value: !Ref ProductName
+     
+  javaJasperLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: potaymaster.aws.lambda.jasperreports.LambdaFunctionHandler
+      Runtime: java8
+      FunctionName: java_jasper
+      CodeUri: 
+        Bucket: !Ref FilesS3Location
+        Key: !Join [ '', [ 'lambda/', !Ref LambdaPackagedFile] ]
+      Description: 'Lambda to generate an PDF with Jasper Reports'
+      MemorySize: 2048
+      Timeout: 300
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds:
+          - !Ref jasperReportsPrivateSubnet
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref TemplatesS3Location
+      Role: !GetAtt jasperreportsLambdaRole.Arn
+  apiPermissionGetJasper:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt javaJasperLambda.Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join [ "", [ "arn:aws:execute-api:", !Ref 'AWS::Region', ":", !Ref 'AWS::AccountId', ":", !Ref jasperreportsHttpApi, "/*/*/jasper" ] ]
+  # END Lambda functions

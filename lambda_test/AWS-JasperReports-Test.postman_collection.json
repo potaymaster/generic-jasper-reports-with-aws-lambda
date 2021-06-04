@@ -1,0 +1,66 @@
+{
+	"info": {
+		"_postman_id": "d4bbc318-42fb-4925-9719-b12758becd70",
+		"name": "AWS-JasperReports-Test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Example template",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"title\": \"My report title\",\n    \"parameters\": {\n        \"string1\": {\n            \"type\": \"String\",\n            \"value\": \"test_string_value_1\"\n        },\n        \"double1\": {\n            \"type\": \"Double\",\n            \"value\": \"154.33\"\n        },\n        \"date1\": {\n            \"type\": \"Date\",\n            \"value\": \"04/06/2021\"\n        },\n        \"test_image\": {\n            \"type\": \"String\"\n            \"value\": \"https://images.unsplash.com/photo-1518717202715-9fa9d099f58a?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1401&q=80\"\n        }\n        \"boolean1\": {\n            \"type\": \"Boolean\",\n            \"value\": \"true\"\n        },\n        \"datasource1\": {\n            \"type\": \"Datasource\",\n            \"value\": [\n                {\n                    \"field1\": {\n                        \"type\": \"String\",\n                        \"value\": \"My string 1\"\n                    },\n                    \"field2\": {\n                        \"type\": \"Double\",\n                        \"value\": \"1.11\"\n                    }\n                },\n                {\n                    \"field1\": {\n                        \"type\": \"String\",\n                        \"value\": \"My string 2\"\n                    },\n                    \"field2\": {\n                        \"type\": \"Double\",\n                        \"value\": \"2.22\"\n                    }\n                },\n                {\n                    \"field1\": {\n                        \"type\": \"String\",\n                        \"value\": \"My string 3\"\n                    },\n                    \"field2\": {\n                        \"type\": \"Double\",\n                        \"value\": \"3.33\"\n                    }\n                },\n                {\n                    \"field1\": {\n                        \"type\": \"String\",\n                        \"value\": \"My string 4\"\n                    },\n                    \"field2\": {\n                        \"type\": \"Double\",\n                        \"value\": \"4.44\"\n                    }\n                },\n                {\n                    \"field1\": {\n                        \"type\": \"String\",\n                        \"value\": \"My string 5\"\n                    },\n                    \"field2\": {\n                        \"type\": \"Double\",\n                        \"value\": \"5.55\"\n                    }\n                }\n            ]\n        }\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "https://XXXX.execute-api.eu-west-1.amazonaws.com/jasper?template=template",
+					"protocol": "https",
+					"host": [
+						"XXXX",
+						"execute-api",
+						"eu-west-1",
+						"amazonaws",
+						"com"
+					],
+					"path": [
+						"jasper"
+					],
+					"query": [
+						{
+							"key": "template",
+							"value": "template"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
