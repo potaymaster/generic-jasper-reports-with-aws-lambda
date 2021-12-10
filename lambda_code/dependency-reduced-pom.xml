@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>potaymaster.aws.lambda</groupId>
   <artifactId>jasperreports</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <build>
     <plugins>
       <plugin>
@@ -57,7 +57,7 @@
   </dependencyManagement>
   <properties>
     <aws.java.sdk.version>2.16.75</aws.java.sdk.version>
-    <log4j.version>2.13.3</log4j.version>
+    <log4j.version>2.15.0</log4j.version>
   </properties>
 </project>
 
